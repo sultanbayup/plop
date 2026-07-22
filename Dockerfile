@@ -6,6 +6,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+# Ensure public exists even if the repo has no static assets
+RUN mkdir -p public
 RUN npx prisma generate
 RUN npm run build
 
@@ -18,8 +20,6 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# public/ may be empty; create dest first so COPY never fails on missing assets
-RUN mkdir -p ./public
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
