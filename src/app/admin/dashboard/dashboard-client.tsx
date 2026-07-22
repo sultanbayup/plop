@@ -8,11 +8,11 @@ type Link = {
   slug: string;
   label: string;
   enabled: boolean;
-  createdAt: Date | string;
+  createdAt: string;
   _count: { uploads: number };
 };
 
-type TokenStatus = { valid: boolean; expiresAt: Date | string | null };
+type TokenStatus = { valid: boolean; expiresAt: string | null };
 
 export default function DashboardClient({
   initialLinks,
@@ -27,6 +27,7 @@ export default function DashboardClient({
   const [tokenStatus, setTokenStatus] = useState(initialTokenStatus);
   const [newLabel, setNewLabel] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newFolder, setNewFolder] = useState('');
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [historyLink, setHistoryLink] = useState<Link | null>(null);
@@ -39,22 +40,33 @@ export default function DashboardClient({
       const res = await fetch('/api/links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ label: newLabel, password: newPassword || undefined }),
+        body: JSON.stringify({ label: newLabel, password: newPassword || undefined, folder: newFolder || undefined }),
       });
       const link = await res.json();
       if (res.ok) {
         setLinks([link, ...links]);
         setNewLabel('');
         setNewPassword('');
+        setNewFolder('');
       }
     } finally {
       setCreating(false);
     }
   }
 
-  async function disableLink(id: string) {
+  async function toggleLink(id: string, enabled: boolean) {
+    await fetch(`/api/links/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    setLinks(links.map(l => (l.id === id ? { ...l, enabled } : l)));
+  }
+
+  async function deleteLinkPermanently(id: string) {
+    if (!confirm('Permanently delete this link and all its upload history?')) return;
     await fetch(`/api/links/${id}`, { method: 'DELETE' });
-    setLinks(links.map(l => (l.id === id ? { ...l, enabled: false } : l)));
+    setLinks(links.filter(l => l.id !== id));
   }
 
   function copyUrl(slug: string) {
@@ -99,7 +111,7 @@ export default function DashboardClient({
           )}
           {tokenStatus.valid && tokenStatus.expiresAt && (
             <p className="text-zinc-500 text-xs mt-2">
-              Token expires {new Date(tokenStatus.expiresAt).toLocaleString()}
+              Token expires <span suppressHydrationWarning>{new Date(tokenStatus.expiresAt).toLocaleString()}</span>
             </p>
           )}
         </div>
@@ -120,6 +132,13 @@ export default function DashboardClient({
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
             placeholder="Password (optional)"
+            className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+          />
+          <input
+            type="text"
+            value={newFolder}
+            onChange={e => setNewFolder(e.target.value)}
+            placeholder="Google Drive folder URL or ID (optional — auto-creates if empty)"
             className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
           />
           <button
@@ -147,7 +166,7 @@ export default function DashboardClient({
                   <h3 className="font-medium text-sm truncate">{link.label}</h3>
                   <p className="text-zinc-500 text-xs mt-1">
                     {link._count.uploads} uploads ·{' '}
-                    {new Date(link.createdAt).toLocaleDateString()}
+                    <span suppressHydrationWarning>{new Date(link.createdAt).toLocaleDateString()}</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -166,15 +185,28 @@ export default function DashboardClient({
                         History
                       </button>
                       <button
-                        onClick={() => disableLink(link.id)}
-                        className="text-xs px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                        onClick={() => toggleLink(link.id, false)}
+                        className="text-xs px-2 py-1 rounded bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 transition-colors"
                       >
                         Disable
                       </button>
                     </>
                   )}
                   {!link.enabled && (
-                    <span className="text-xs text-zinc-600">Disabled</span>
+                    <>
+                      <button
+                        onClick={() => toggleLink(link.id, true)}
+                        className="text-xs px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
+                      >
+                        Enable
+                      </button>
+                      <button
+                        onClick={() => deleteLinkPermanently(link.id)}
+                        className="text-xs px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

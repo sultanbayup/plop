@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = [
@@ -142,7 +142,24 @@ export default function UploadClient({
   const [files, setFiles] = useState<FileState[]>([]);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
+  const [loadingToken, setLoadingToken] = useState(!hasPassword);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!hasPassword) {
+      fetch(`/api/verify/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.accessToken) setCredentials(data);
+        })
+        .catch(console.error)
+        .finally(() => setLoadingToken(false));
+    }
+  }, [slug, hasPassword]);
 
   async function handleUnlock(e: React.FormEvent) {
     e.preventDefault();
@@ -298,29 +315,20 @@ export default function UploadClient({
 
         {/* No password case — load token immediately */}
         {step === 1 && !hasPassword && (
-          <div className="flex justify-center">
-            <button
-              onClick={async () => {
-                const res = await fetch(`/api/verify/${slug}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({}),
-                });
-                if (res.ok) {
-                  setCredentials(await res.json());
-                  setStep(2);
-                }
-              }}
-              className="bg-white text-black font-medium px-6 py-3 rounded-md text-sm hover:bg-zinc-200 transition-colors"
-            >
-              Start Uploading
-            </button>
+          <div className="text-center p-4">
+            <p className="text-zinc-400 text-sm">Connecting to Google Drive...</p>
           </div>
         )}
 
         {/* Upload Zone */}
         {step === 2 && (
           <div className="space-y-4">
+            {!credentials ? (
+              <div className="text-center p-4">
+                <p className="text-zinc-400 text-sm">Connecting to Google Drive...</p>
+              </div>
+            ) : (
+              <>
             {/* Drop zone */}
             <div
               className="border-2 border-dashed border-zinc-700 rounded-lg p-8 text-center hover:border-zinc-500 transition-colors cursor-pointer"
@@ -414,6 +422,8 @@ export default function UploadClient({
                   Files are in your Google Drive under &ldquo;Plop - {label}&rdquo;
                 </p>
               </div>
+            )}
+              </>
             )}
           </div>
         )}

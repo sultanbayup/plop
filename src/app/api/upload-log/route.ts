@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
-import { verifySessionToken } from '../../../lib/session';
 
 export async function POST(request: NextRequest) {
-  const session = request.cookies.get('plop_session');
-  if (!verifySessionToken(session?.value)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const body = await request.json();
   const { linkId, fileName, fileSize, mimeType } = body;
 
   if (!linkId || !fileName) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
+
+  const link = await prisma.uploadLink.findUnique({ where: { id: linkId } });
+  if (!link) {
+    return NextResponse.json({ error: 'Link not found' }, { status: 404 });
   }
 
   await prisma.upload.create({
