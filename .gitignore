@@ -1,0 +1,9 @@
+.next/
+node_modules/
+plan/
+data/
+.env
+.env.local
+.npmrc
+*.log
+npm-debug.log*

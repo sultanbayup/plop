@@ -1,0 +1,45 @@
+{
+  "name": "plop",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "docker:build": "docker build -t plop .",
+    "docker:run": "docker run -p 3000:3000 -v $(pwd)/data:/app/data plop"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.18.0",
+    "bcryptjs": "^2.4.3",
+    "cookie": "^0.6.0",
+    "express-rate-limit": "^7.4.0",
+    "google-auth-library": "^9.11.0",
+    "helmet": "^7.1.0",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "uuid": "^10.0.0"
+  },
+  "allowScripts": {
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "prisma": true,
+    "sharp": true
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie": "^0.6.0",
+    "@types/node": "20.17.6",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "^19.0.0",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "prisma": "^5.18.0",
+    "typescript": "5.8.2"
+  }
+}

@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../data/plop.db"
+}
+
+model User {
+  id                  String       @id @default(uuid())
+  email               String       @unique
+  name                String
+  googleRefreshToken  String       // AES-256-GCM encrypted
+  googleTokenExpires  DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  links               UploadLink[]
+}
+
+model UploadLink {
+  id             String    @id @default(uuid())
+  userId         String
+  slug           String    @unique  // UUID v4, public-facing
+  label          String
+  passwordHash   String?
+  targetFolderId String    // Google Drive folder ID
+  enabled        Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id])
+  uploads        Upload[]
+}
+
+model Upload {
+  id         String     @id @default(uuid())
+  linkId     String
+  fileName   String
+  fileSize   Int
+  mimeType   String
+  uploadedAt DateTime  @default(now())
+  link       UploadLink @relation(fields: [linkId], references: [id])
+}
