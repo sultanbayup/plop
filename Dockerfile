@@ -12,6 +12,8 @@ RUN npm ci
 COPY . .
 # Ensure public exists even if the repo has no static assets
 RUN mkdir -p public
+# Local/default path for generate; runtime overrides via DATABASE_URL
+ENV DATABASE_URL="file:../data/plop.db"
 RUN npx prisma generate
 RUN npm run build
 
@@ -20,6 +22,7 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV DATABASE_URL="file:/app/data/plop.db"
 
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -37,15 +40,15 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-RUN mkdir -p /app/data \
-  && chown -R nextjs:nodejs /app/data /app/node_modules/.prisma /app/node_modules/@prisma /app/node_modules/prisma
-
-USER nextjs
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh \
+  && mkdir -p /app/data \
+  && chown -R nextjs:nodejs /app/node_modules/.prisma /app/node_modules/@prisma /app/node_modules/prisma
 
 EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Apply schema on boot (safe for SQLite volume mounts), then start the app
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --skip-generate && node server.js"]
+# Start as root so the entrypoint can chown the mounted data volume, then drop to nextjs
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
