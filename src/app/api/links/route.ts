@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
 import { verifySessionToken } from '../../../lib/session';
-import { createDriveFolder } from '../../../lib/google';
+import { createDriveFolder, extractFolderId } from '../../../lib/google';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 
@@ -38,13 +38,23 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { label, password } = body;
+  const { label, password, folder } = body;
 
   if (!label || typeof label !== 'string' || label.trim().length === 0) {
     return NextResponse.json({ error: 'Label is required' }, { status: 400 });
   }
 
-  const folderId = await createDriveFolder(`Plop - ${label.trim()}`);
+  let folderId: string;
+  if (folder && typeof folder === 'string' && folder.trim()) {
+    const extracted = extractFolderId(folder.trim());
+    if (extracted) {
+      folderId = extracted;
+    } else {
+      folderId = await createDriveFolder(`Plop - ${label.trim()}`);
+    }
+  } else {
+    folderId = await createDriveFolder(`Plop - ${label.trim()}`);
+  }
   const slug = uuidv4();
   const passwordHash = password
     ? await bcrypt.hash(password, 12)
@@ -64,6 +74,7 @@ export async function POST(request: NextRequest) {
       label: true,
       enabled: true,
       createdAt: true,
+      _count: { select: { uploads: true } },
     },
   });
 

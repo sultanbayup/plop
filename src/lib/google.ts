@@ -8,7 +8,12 @@ const client = new OAuth2Client(
   process.env.GOOGLE_REDIRECT_URI
 );
 
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+const SCOPES = [
+  'openid',
+  'email',
+  'profile',
+  'https://www.googleapis.com/auth/drive.file',
+];
 
 let cachedAccessToken: string | null = null;
 let cachedTokenExpiry: number = 0;
@@ -27,8 +32,8 @@ export async function handleCallback(code: string) {
     throw new Error('No refresh token received. Revoke access and try again.');
   }
 
-  let email: string;
-  let name: string;
+  let email = '';
+  let name = '';
 
   if (tokens.id_token) {
     const idToken = await client.verifyIdToken({
@@ -132,6 +137,18 @@ export async function createDriveFolder(folderName: string): Promise<string> {
   if (!response.ok) throw new Error(`Failed to create folder: ${await response.text()}`);
   const data = await response.json();
   return data.id;
+}
+
+export function extractFolderId(folderInput: string): string | null {
+  const urlMatch = folderInput.match(/[?&]id=([^&]+)/);
+  if (urlMatch) return urlMatch[1];
+
+  const pathMatch = folderInput.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (pathMatch) return pathMatch[1];
+
+  if (/^[a-zA-Z0-9_-]{20,}$/.test(folderInput.trim())) return folderInput.trim();
+
+  return null;
 }
 
 export function getDriveClient() {

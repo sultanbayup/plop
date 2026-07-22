@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   }
 
   const tokenStatus = await getTokenStatus();
-  const links = await prisma.uploadLink.findMany({
+  const rawLinks = await prisma.uploadLink.findMany({
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -24,10 +24,20 @@ export default async function DashboardPage() {
     },
   });
 
+  const links = rawLinks.map(l => ({
+    ...l,
+    createdAt: l.createdAt.toISOString(),
+  }));
+
+  const status = {
+    valid: tokenStatus.valid,
+    expiresAt: tokenStatus.expiresAt?.toISOString() || null,
+  };
+
   return (
     <DashboardClient
       initialLinks={links}
-      initialTokenStatus={tokenStatus}
+      initialTokenStatus={status}
       appUrl={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}
     />
   );

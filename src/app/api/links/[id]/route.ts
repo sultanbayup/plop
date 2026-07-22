@@ -14,12 +14,35 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  await prisma.uploadLink.update({
-    where: { id },
-    data: { enabled: false },
-  });
+  await prisma.upload.deleteMany({ where: { linkId: id } });
+  await prisma.uploadLink.delete({ where: { id } });
 
   return NextResponse.json({ success: true });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = request.cookies.get('plop_session');
+  if (!verifySessionToken(session?.value)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const body = await request.json();
+  const { enabled } = body;
+
+  if (typeof enabled !== 'boolean') {
+    return NextResponse.json({ error: 'enabled must be boolean' }, { status: 400 });
+  }
+
+  const link = await prisma.uploadLink.update({
+    where: { id },
+    data: { enabled },
+  });
+
+  return NextResponse.json({ id: link.id, enabled: link.enabled });
 }
 
 export async function POST(

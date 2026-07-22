@@ -119,6 +119,7 @@ a {
 .text-zinc-600 { color: #52525b; }
 .text-green-400 { color: #4ade80; }
 .text-red-400 { color: #f87171; }
+.text-yellow-400 { color: #facc15; }
 .bg-white { background: #fafafa; }
 .bg-black { background: #000; }
 .bg-zinc-800 { background: #27272a; }
@@ -182,6 +183,8 @@ a {
 .block { display: block; }
 .inline-block { display: inline-block; }
 .hover\:bg-red-500\/20:hover { background: rgba(239, 68, 68, 0.2); }
+.hover\:bg-yellow-500\/20:hover { background: rgba(250, 204, 21, 0.2); }
+.bg-yellow-500\/10 { background: rgba(250, 204, 21, 0.1); }
 
 /* Focus */
 .focus\:outline-none:focus { outline: none; }
