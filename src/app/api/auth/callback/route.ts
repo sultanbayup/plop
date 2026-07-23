@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appPath } from '../../../../lib/app-url';
 import { handleCallback } from '../../../../lib/google';
 import { generateSessionToken } from '../../../../lib/session';
 
@@ -7,18 +8,14 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
 
   if (!code) {
-    return NextResponse.redirect(
-      new URL(`/admin?error=no_code`, request.url)
-    );
+    return NextResponse.redirect(appPath('/admin?error=no_code'));
   }
 
   try {
     const user = await handleCallback(code);
     const { token, expires } = generateSessionToken();
 
-    const response = NextResponse.redirect(
-      new URL('/admin/dashboard', request.url)
-    );
+    const response = NextResponse.redirect(appPath('/admin/dashboard'));
 
     response.cookies.set('plop_session', `${token}:${expires}`, {
       httpOnly: true,
@@ -33,7 +30,7 @@ export async function GET(request: NextRequest) {
     console.error('OAuth callback error:', err);
     const msg = err instanceof Error ? err.message : 'auth_failed';
     return NextResponse.redirect(
-      new URL(`/admin?error=${encodeURIComponent(msg)}`, request.url)
+      appPath(`/admin?error=${encodeURIComponent(msg)}`)
     );
   }
 }
