@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appPath } from '../../../lib/app-url';
 import { getAuthUrl } from '../../../lib/google';
 
 export async function GET(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (action === 'logout') {
-    const response = NextResponse.redirect(new URL('/admin', request.url));
+    const response = NextResponse.redirect(appPath('/admin'));
     response.cookies.delete('plop_session');
     return response;
   }
