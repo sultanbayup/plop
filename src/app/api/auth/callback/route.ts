@@ -27,7 +27,14 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (err) {
-    console.error('OAuth callback error:', err);
+    const response =
+      err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: unknown } }).response
+        : undefined;
+    console.error('OAuth callback error:', err instanceof Error ? err.message : err);
+    if (response?.data) {
+      console.error('OAuth error detail:', JSON.stringify(response.data));
+    }
     const msg = err instanceof Error ? err.message : 'auth_failed';
     return NextResponse.redirect(
       appPath(`/admin?error=${encodeURIComponent(msg)}`)
